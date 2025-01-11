@@ -126,13 +126,22 @@ def main():
     st.set_page_config(page_title="Generátor slovenských slov", page_icon="🇸🇰", layout="wide")
     st.title("Generátor slovenských slov")
 
+    # Initialize session state at the start of the app
+    if 'letters' not in st.session_state:
+        st.session_state['letters'] = ""
+
     generator = SlovakWordGenerator()
 
     # Create two columns
     col1, col2 = st.columns([2, 1])
 
     with col1:
-        letters = st.text_input("Zadajte písmená (presne 10):", key="letters")
+        # Use session state for text input
+        letters = st.text_input(
+            "Zadajte písmená (presne 10):",
+            value=st.session_state.letters,  # Initialize with current session state
+            key="text_input"
+        )
 
         # Special characters buttons in rows
         st.write("Špeciálne znaky:")
@@ -146,24 +155,26 @@ def main():
         for row in special_chars:
             cols = st.columns(len(row))
             for i, char in enumerate(row):
-                if cols[i].button(char):
-                    letters = st.session_state.letters + char
-                    st.session_state.letters = letters
+                if cols[i].button(char, key=f"btn_{char}"):
+                    st.session_state.letters += char  # Append the character
+                    st.rerun()
 
     with col2:
         generate_button = st.button("Generovať slová", type="primary")
-        clear_button = st.button("Vyčistiť")
+        if st.button("Vyčistiť", key="clear"):
+            st.session_state.letters = ""
+            st.rerun()
 
-    if clear_button:
-        st.session_state.letters = ""
-        st.experimental_rerun()
+    # Update letters in session state when text input changes
+    if letters != st.session_state.letters:
+        st.session_state.letters = letters
 
-    if generate_button and letters:
-        normalized_len = len(generator.normalize_slovak(letters))
+    if generate_button and st.session_state.letters:
+        normalized_len = len(generator.normalize_slovak(st.session_state.letters))
         if normalized_len != 10:
             st.error(f"Prosím, zadajte presne 10 písmen! (Zadali ste {normalized_len})")
         else:
-            words = generator.generate_words(letters)
+            words = generator.generate_words(st.session_state.letters)
             
             if not words:
                 st.warning("Neboli nájdené žiadne slová.")
