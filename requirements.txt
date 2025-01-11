@@ -1,0 +1,10 @@
+numpy==1.23.5
+opencv-python==4.8.0.74
+ultralytics
+cvzone
+mysql-connector-python
+paddleocr>=2.0.0
+paddlepaddle
+albumentations
+streamlit
+watchdog
