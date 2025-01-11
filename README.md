@@ -20,3 +20,9 @@ pip install opencv-python==4.8.0.74
 # run app
 python main.py
 
+
+# Add files to Git
+git add .
+git commit -m "Changes_Diactricis"
+git push -u origin main
+

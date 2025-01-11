@@ -2,38 +2,55 @@ import streamlit as st
 from collections import Counter
 import pandas as pd
 
-
-
-
 class SlovakWordGenerator:
-    def __init__(self):
+    def __init__(self, allowed_diacritics=None):
         self.dictionary = set()
-        self.load_dictionary('sk_SK.dic')  # Ensure 'sk_SK.dic' is in the project directory
+        self.allowed_diacritics = allowed_diacritics or set()
+        # Extended map to include uppercase letters
+        self.slovak_map = {
+            'á': 'a', 'ä': 'a', 'č': 'c', 'ď': 'd', 
+            'é': 'e', 'í': 'i', 'ĺ': 'l', 'ľ': 'l',
+            'ň': 'n', 'ó': 'o', 'ô': 'o', 'ŕ': 'r',
+            'š': 's', 'ť': 't', 'ú': 'u', 'ý': 'y',
+            'ž': 'z',
+            'Á': 'a', 'Ä': 'a', 'Č': 'c', 'Ď': 'd',
+            'É': 'e', 'Í': 'i', 'Ĺ': 'l', 'Ľ': 'l',
+            'Ň': 'n', 'Ó': 'o', 'Ô': 'o', 'Ŕ': 'r',
+            'Š': 's', 'Ť': 't', 'Ú': 'u', 'Ý': 'y',
+            'Ž': 'z'
+        }
+        self.all_diacritics = set('áäčďéíĺľňóôŕšťúýžÁÄČĎÉÍĹĽŇÓÔŔŠŤÚÝŽ')
+        self.load_dictionary('sk_SK.dic')
 
     def load_dictionary(self, filename):
         with open(filename, 'r', encoding='utf-8') as file:
             for line in file:
                 line = line.strip()
                 if line.startswith('#') or not line:
-                    continue  # Skip comments and empty lines
-                word = line.split('/')[0]  # Extract the word part
-                self.dictionary.add(word)
+                    continue
+                word = line.split('/')[0]
+                # Store words in lowercase to avoid case issues
+                self.dictionary.add(word.lower())
 
     def normalize_slovak(self, text: str) -> str:
-        slovak_map = {
-            'á': 'a', 'ä': 'a', 'č': 'c', 'ď': 'd', 
-            'é': 'e', 'í': 'i', 'ĺ': 'l', 'ľ': 'l',
-            'ň': 'n', 'ó': 'o', 'ô': 'o', 'ŕ': 'r',
-            'š': 's', 'ť': 't', 'ú': 'u', 'ý': 'y',
-            'ž': 'z'
-        }
+        # Convert to lowercase first
         text = text.lower()
-        return ''.join(slovak_map.get(c, c) for c in text)
+        result = []
+        for c in text:
+            if c in self.allowed_diacritics:
+                result.append(c)
+            else:
+                result.append(self.slovak_map.get(c, c))
+        return ''.join(result)
+
+    def has_unauthorized_diacritics(self, word: str) -> bool:
+        # Check both lowercase and uppercase diacritics
+        return any(c in (self.all_diacritics - set(self.allowed_diacritics)) for c in word)
 
     def calculate_word_score(self, word: str) -> int:
         base_score = len(word) * 10
-        special_chars = 'áäčďéíĺľňóôŕšťúýž'
-        bonus = sum(2 for c in word if c in special_chars)
+        # Only count allowed diacritics for bonus
+        bonus = sum(2 for c in word if c in self.allowed_diacritics)
         return base_score + bonus
 
     def can_make_word(self, available_letters: str, word: str) -> bool:
@@ -44,6 +61,10 @@ class SlovakWordGenerator:
     def generate_words(self, letters: str) -> list:
         results = []
         for word in self.dictionary:
+            # Skip words with unauthorized diacritics
+            if self.has_unauthorized_diacritics(word):
+                continue
+                
             if self.can_make_word(letters, word):
                 score = self.calculate_word_score(word)
                 results.append((word, score))
@@ -53,50 +74,72 @@ def main():
     st.set_page_config(page_title="Generátor slovenských slov", page_icon="🇸🇰", layout="wide")
     st.title("Generátor slovenských slov")
 
-    # Initialize session state at the start of the app
+    # Initialize session states
     if 'letters' not in st.session_state:
         st.session_state['letters'] = ""
+    if 'allowed_diacritics' not in st.session_state:
+        st.session_state['allowed_diacritics'] = set()
 
-    generator = SlovakWordGenerator()
-
-    # Create two columns
-    col1, col2 = st.columns([2, 1])
+    # Create three columns for better layout
+    col1, col2, col3 = st.columns([2, 1, 1])
 
     with col1:
-        # Use session state for text input
         letters = st.text_input(
             "Zadajte písmená (presne 10):",
-            value=st.session_state.letters,  # Initialize with current session state
+            value=st.session_state.letters,
             key="text_input"
         )
 
-        # Special characters buttons in rows
-        st.write("Špeciálne znaky:")
-        special_chars = [
-            ['á', 'ä', 'č', 'ď', 'é'],
-            ['í', 'ĺ', 'ľ', 'ň', 'ó'],
-            ['ô', 'ŕ', 'š', 'ť', 'ú'],
-            ['ý', 'ž']
-        ]
+        # Group special characters by type
+        diacritic_groups = {
+            "Dlhé samohlásky": ['á', 'é', 'í', 'ó', 'ú', 'ý'],
+            "Mäkké spoluhlásky": ['č', 'ď', 'ľ', 'ň', 'š', 'ť', 'ž'],
+            "Ostatné": ['ä', 'ĺ', 'ô', 'ŕ']
+        }
 
-        for row in special_chars:
-            cols = st.columns(len(row))
-            for i, char in enumerate(row):
-                if cols[i].button(char, key=f"btn_{char}"):
-                    st.session_state.letters += char  # Append the character
-                    st.rerun()
+        # Create tabs for different diacritic groups
+        tabs = st.tabs(list(diacritic_groups.keys()))
+        
+        for tab, (group_name, chars) in zip(tabs, diacritic_groups.items()):
+            with tab:
+                st.write(f"Vybrané {group_name.lower()}:")
+                cols = st.columns(len(chars))
+                for i, char in enumerate(chars):
+                    checkbox = cols[i].checkbox(
+                        char,
+                        value=char in st.session_state.allowed_diacritics,
+                        key=f"check_{char}"
+                    )
+                    if checkbox and char not in st.session_state.allowed_diacritics:
+                        st.session_state.allowed_diacritics.add(char)
+                    elif not checkbox and char in st.session_state.allowed_diacritics:
+                        st.session_state.allowed_diacritics.remove(char)
 
     with col2:
+        st.write("Vybrané diakritické znaky:")
+        if st.session_state.allowed_diacritics:
+            st.code(" ".join(sorted(st.session_state.allowed_diacritics)))
+        else:
+            st.write("Žiadne")
+
+        if st.button("Vyčistiť diakritiku", key="clear_diacritics"):
+            st.session_state.allowed_diacritics = set()
+            st.rerun()
+
+    with col3:
         generate_button = st.button("Generovať slová", type="primary")
-        if st.button("Vyčistiť", key="clear"):
+        if st.button("Vyčistiť text", key="clear"):
             st.session_state.letters = ""
             st.rerun()
 
-    # Update letters in session state when text input changes
+    # Update letters in session state
     if letters != st.session_state.letters:
         st.session_state.letters = letters
 
     if generate_button and st.session_state.letters:
+        # Create generator with current allowed diacritics
+        generator = SlovakWordGenerator(st.session_state.allowed_diacritics)
+        
         normalized_len = len(generator.normalize_slovak(st.session_state.letters))
         if normalized_len != 10:
             st.error(f"Prosím, zadajte presne 10 písmen! (Zadali ste {normalized_len})")
