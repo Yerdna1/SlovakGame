@@ -7,89 +7,19 @@ import pandas as pd
 
 class SlovakWordGenerator:
     def __init__(self):
-        # Built-in dictionary of common Slovak words
-        self.dictionary = {
-            # Basic words and conjunctions
-            'a', 'aby', 'ak', 'ako', 'alebo', 'ale', 'ani', 'až', 'že', 'keď', 'však',
-            
-            # Common verbs (more forms)
-            'byť', 'mať', 'ísť', 'prísť', 'odísť', 'robiť', 'vidieť', 'počuť', 'hovoriť',
-            'písať', 'čítať', 'spať', 'jesť', 'piť', 'variť', 'učiť', 'pracovať', 'hrať',
-            'plakať', 'smiať', 'bežať', 'skákať', 'sedieť', 'stáť', 'ležať', 'cestovať',
-            'nakupovať', 'predávať', 'platiť', 'študovať', 'rozumieť', 'myslieť', 'vedieť',
-            'chcieť', 'môcť', 'musieť', 'začať', 'skončiť', 'pokračovať',
-            
-            # House and furniture
-            'dom', 'byt', 'izba', 'kuchyňa', 'kúpeľňa', 'záchod', 'spálňa', 'obývačka',
-            'stôl', 'stolička', 'skriňa', 'posteľ', 'police', 'zrkadlo', 'umývadlo',
-            'vaňa', 'sprcha', 'záclona', 'koberec', 'lampa', 'obraz', 'hodiny', 'dvere',
-            'okno', 'stena', 'strop', 'podlaha', 'balkón', 'garáž', 'záhrada', 'plot',
-            
-            # Food and cooking
-            'chlieb', 'maslo', 'syr', 'mlieko', 'smotana', 'jogurt', 'vajce', 'mäso',
-            'kura', 'ryba', 'šunka', 'klobása', 'párky', 'polievka', 'zemiak', 'ryža',
-            'cestoviny', 'šalát', 'mrkva', 'paradajka', 'uhorka', 'cibuľa', 'cesnak',
-            'jablko', 'hruška', 'banán', 'pomaranč', 'citrón', 'čučoriedky', 'jahoda',
-            
-            # School and education
-            'škola', 'trieda', 'žiak', 'študent', 'učiteľ', 'profesor', 'kniha',
-            'zošit', 'pero', 'ceruzka', 'tabuľa', 'krieda', 'úloha', 'skúška',
-            'známka', 'vysvedčenie', 'prestávka', 'fyzika', 'chémia', 'biológia',
-            
-            # Technology and modern life
-            'počítač', 'telefón', 'mobil', 'tablet', 'internet', 'wifi', 'email',
-            'správa', 'aplikácia', 'program', 'heslo', 'súbor', 'video', 'fotka',
-            'kamera', 'televízor', 'rádio', 'nabíjačka', 'batéria', 'obrazovka',
-            
-            # Transportation
-            'auto', 'autobus', 'vlak', 'lietadlo', 'bicykel', 'motorka', 'loď',
-            'metro', 'električka', 'zastávka', 'stanica', 'letenka', 'lístok',
-            'vodič', 'cestujúci', 'batožina', 'kufor', 'cesta', 'ulica', 'most',
-            
-            # Nature and environment
-            'slnko', 'mesiac', 'hviezda', 'nebo', 'oblak', 'dážď', 'sneh', 'vietor',
-            'búrka', 'strom', 'kvet', 'tráva', 'list', 'koreň', 'hora', 'les',
-            'rieka', 'jazero', 'more', 'ostrov', 'pláž', 'púšť', 'vzduch', 'zem',
-            
-            # Animals
-            'pes', 'mačka', 'kôň', 'krava', 'ovca', 'koza', 'prasa', 'sliepka',
-            'kohút', 'zajac', 'myš', 'medveď', 'vlk', 'líška', 'jeleň', 'veverička',
-            'vták', 'holub', 'orol', 'sova', 'had', 'žaba', 'ryba', 'motýľ', 'včela',
-            
-            # Sports and leisure
-            'futbal', 'hokej', 'tenis', 'volejbal', 'basketbal', 'plávanie',
-            'beh', 'lyžovanie', 'korčuľovanie', 'tanec', 'šport', 'hra', 'zápas',
-            'tréning', 'cvičenie', 'prechádzka', 'výlet', 'dovolenka', 'prázdniny',
-            
-            # Health and medicine
-            'zdravie', 'choroba', 'bolesť', 'liek', 'doktor', 'lekár', 'zubár',
-            'nemocnica', 'sanitka', 'ordinácia', 'recept', 'teplota', 'chrípka',
-            'nádcha', 'kašeľ', 'rana', 'operácia', 'vyšetrenie', 'poisťovňa'
-        }
+        self.dictionary = set()
+        self.load_dictionary('sk_SK.dic')  # Ensure 'sk_SK.dic' is in the project directory
 
-        # Add common word variations
-        self.dictionary.update({
-            # Verb conjugations
-            'som', 'si', 'je', 'sme', 'ste', 'sú',
-            'bol', 'bola', 'bolo', 'boli',
-            'budem', 'budeš', 'bude', 'budeme', 'budete', 'budú',
-            'mám', 'máš', 'má', 'máme', 'máte', 'majú',
-            'mal', 'mala', 'malo', 'mali',
-            'idem', 'ideš', 'ide', 'ideme', 'idete', 'idú',
-            'šiel', 'šla', 'šlo', 'šli',
-            'robím', 'robíš', 'robí', 'robíme', 'robíte', 'robia',
-            'robil', 'robila', 'robilo', 'robili',
-            
-            # Noun cases
-            'človeka', 'človeku', 'človekom', 'ľudia', 'ľudí', 'ľuďom', 'ľuďmi',
-            'mesta', 'mestu', 'mestom', 'mestá', 'miest', 'mestám', 'mestami',
-            'domu', 'domom', 'domy', 'domov', 'domom', 'domami',
-            'ženy', 'žene', 'ženu', 'ženou', 'žien', 'ženám', 'ženami',
-            'dieťa', 'dieťaťa', 'dieťaťu', 'dieťaťom', 'deti', 'detí', 'deťom', 'deťmi'
-        })
+    def load_dictionary(self, filename):
+        with open(filename, 'r', encoding='utf-8') as file:
+            for line in file:
+                line = line.strip()
+                if line.startswith('#') or not line:
+                    continue  # Skip comments and empty lines
+                word = line.split('/')[0]  # Extract the word part
+                self.dictionary.add(word)
 
     def normalize_slovak(self, text: str) -> str:
-        """Convert text with diacritics to basic form"""
         slovak_map = {
             'á': 'a', 'ä': 'a', 'č': 'c', 'ď': 'd', 
             'é': 'e', 'í': 'i', 'ĺ': 'l', 'ľ': 'l',
@@ -101,20 +31,17 @@ class SlovakWordGenerator:
         return ''.join(slovak_map.get(c, c) for c in text)
 
     def calculate_word_score(self, word: str) -> int:
-        """Calculate score based on word length and special characters"""
         base_score = len(word) * 10
         special_chars = 'áäčďéíĺľňóôŕšťúýž'
         bonus = sum(2 for c in word if c in special_chars)
         return base_score + bonus
 
     def can_make_word(self, available_letters: str, word: str) -> bool:
-        """Check if word can be made from available letters"""
         available = Counter(self.normalize_slovak(available_letters))
         needed = Counter(self.normalize_slovak(word))
         return all(available[c] >= needed[c] for c in needed)
 
     def generate_words(self, letters: str) -> list:
-        """Generate possible words and their scores"""
         results = []
         for word in self.dictionary:
             if self.can_make_word(letters, word):
